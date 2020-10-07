@@ -1,7 +1,7 @@
-#include <FastLED.h>
-#include <JC_Button_Ext.h>
-#include <Rotary.h>
 #include <Atmega328p-io.h>
+#include <FastLED.h>
+#include <JC_Button.h>
+#include <Rotary.h>
 #include "hardware.h"
 
 #define DEBOUNCE_MS 20
@@ -27,8 +27,6 @@ CRGB cursorColor;
 CHSV palette[NUM_PALETTE];
 
 #define BRIGHTNESS 128
-
-
 
 int8_t enc1d = 0;
 int8_t enc2d = 0;
@@ -74,8 +72,6 @@ inline void loadColor() {
   v = palette[c].v;
 }
 
-
-
 ISR(PCINT2_vect) {
   uint8_t result =
       enc1.process(digitalState(PIN_ENC1_1), digitalState(PIN_ENC1_2));
@@ -109,7 +105,6 @@ ISR(PCINT0_vect) {
 
 ISR(PCINT1_vect) { inputsChanged = true; }
 
-
 inline uint8_t encunl(uint8_t x, uint8_t d, uint8_t result) {
   if (result == DIR_NONE) {
     return x;
@@ -140,7 +135,6 @@ inline uint8_t enc(uint8_t x, uint8_t d, uint8_t result) {
     return inc(x, d);
   }
 }
-
 
 void generatePalette() {
   fill_rainbow(palette, NUM_PALETTE, BRIGHTNESS, 16);
@@ -242,7 +236,6 @@ void draw() {
       return;
   }
 }
-
 
 void setup() {
   btn_enc1.begin();
