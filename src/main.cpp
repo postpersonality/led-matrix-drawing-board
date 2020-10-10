@@ -43,12 +43,15 @@ uint8_t cy = 7;
 bool inputsChanged = true;
 bool displayChanged = true;
 bool cursorChanged = true;
+#define CURSOR_BLINKING 15
+uint8_t cursorBlinking = CURSOR_BLINKING;
 #define MODE_HOVER 0
 #define MODE_DRAW 1
 #define MODE_ERASE 2
 uint8_t drawMode = MODE_DRAW;
 
 uint8_t count = 0;
+uint8_t countPrev = 0;
 
 inline void restoreCursor() { displayBuffer.setPixel(cx, cy, cursorColor); }
 
@@ -187,6 +190,7 @@ void checkInputs() {
 void draw() {
     switch (drawMode) {
         case MODE_HOVER:
+            cursorBlinking = CURSOR_BLINKING >> 1;
             displayChanged = true;
             if (cursorChanged) {
                 restoreCursor();
@@ -196,6 +200,7 @@ void draw() {
             displayBuffer.setPixel(x, y, palette.get(c));
             return;
         case MODE_DRAW:
+            cursorBlinking = CURSOR_BLINKING;
             displayChanged = true;
             if (cursorChanged) {
                 cursorColor = fgColor;
@@ -207,6 +212,7 @@ void draw() {
             displayBuffer.setPixel(x, y, palette.get(c));
             return;
         case MODE_ERASE:
+            cursorBlinking = 1;
             displayChanged = true;
             if (cursorChanged) {
                 cursorColor = bgColor;
@@ -250,13 +256,13 @@ void loop() {
     }
 
     // Cursor blinking
-    count = (count + 1) & 7;
-    if (!(count & 3)) {
-        if (count & 4) {
-            displayBuffer.setPixel(x, y, bgColor);
-        } else {
-            displayBuffer.setPixel(x, y, palette.get(c));
-        }
+    countPrev = count;
+    count = (count + 1) & CURSOR_BLINKING;
+    if (count >= cursorBlinking && countPrev < cursorBlinking) {
+        displayBuffer.setPixel(x, y, bgColor);
+        displayChanged = true;
+    } else if (count < cursorBlinking && countPrev >= cursorBlinking) {
+        displayBuffer.setPixel(x, y, palette.get(c));
         displayChanged = true;
     }
 
