@@ -19,4 +19,5 @@ class DisplayBuffer {
    private:
     CRGB leds[NUM_LEDS];
     uint16_t XY(uint8_t x, uint8_t y);
+    friend class PalettedBuffer;
 };

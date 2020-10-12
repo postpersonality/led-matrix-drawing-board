@@ -1,23 +1,28 @@
 #include "palette.h"
 
 Palette::Palette() {
-    fill_rainbow(palette, NUM_PALETTE, 128, 16);
-    for (uint8_t i; i < NUM_PALETTE; i++) {
-        palette[i].s = 196;
-        palette[i].v = 128;
+    fill_rainbow(colors, PALETTE_SIZE, 128, PALETTE_SIZE - 1);
+    for (uint8_t i = 0; i < PALETTE_SIZE - 1; i++) {
+        colors[i].s = 160;
+        colors[i].v = 128;
     }
+    colors[PALETTE_BG_COLOR_INDEX] = CHSV(0, 0, 32);
 }
 
 CHSV Palette::get(uint8_t index) {
-    return palette[index];
+    return colors[index];
+}
+
+CHSV* Palette::getRef(uint8_t index) {
+    return &colors[index];
 }
 
 void Palette::set(uint8_t index, CHSV color) {
-    palette[index] = color;
+    colors[index] = color;
 }
 
 void Palette::set(uint8_t index, uint8_t h, uint8_t s, uint8_t v) {
-    palette[index].h = h;
-    palette[index].s = s;
-    palette[index].v = v;
+    colors[index].h = h;
+    colors[index].s = s;
+    colors[index].v = v;
 }

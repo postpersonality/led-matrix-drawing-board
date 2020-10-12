@@ -6,12 +6,13 @@
 #include "encoder.h"
 #include "hardware.h"
 #include "palette.h"
-//#include "paletted-buffer.h"
+#include "paletted-buffer.h"
 
 #define DEBOUNCE_MS 20
 
 DisplayBuffer displayBuffer;
 Palette palette;
+PalettedBuffer palettedBuffer(&displayBuffer, &palette);
 
 Rotary enc1(PIN_ENC1_1, PIN_ENC1_2);
 Rotary enc2(PIN_ENC2_1, PIN_ENC2_2);
@@ -25,16 +26,14 @@ Button btn3(PIN_BTN3, DEBOUNCE_MS, false, false);
 Button btn4(PIN_BTN4, DEBOUNCE_MS, false, false);
 Button btn5(PIN_BTN5, DEBOUNCE_MS, false, false);
 
-CRGB cursorColor;
+uint8_t cursorColorIndex;
+uint8_t fgColorIndex = 0;
+uint8_t bgColorIndex = PALETTE_BG_COLOR_INDEX;
 
 int8_t enc1d = 0;
 int8_t enc2d = 0;
 int8_t enc3d = 0;
 
-CHSV fgColor(128, 196, 196);
-CHSV bgColor(0, 0, 0);
-
-uint8_t c = 0;
 uint8_t x = 7;
 uint8_t y = 7;
 uint8_t cx = 7;
@@ -42,9 +41,10 @@ uint8_t cy = 7;
 
 bool inputsChanged = true;
 bool displayChanged = true;
+bool redrawRequired = true;
 bool cursorChanged = true;
-#define CURSOR_BLINKING 15
-uint8_t cursorBlinking = CURSOR_BLINKING;
+#define CURSOR_BLINK_TICKS_MAX 15
+uint8_t cursorBlinkTicks = CURSOR_BLINK_TICKS_MAX;
 #define MODE_HOVER 0
 #define MODE_DRAW 1
 #define MODE_ERASE 2
@@ -53,16 +53,12 @@ uint8_t drawMode = MODE_DRAW;
 uint8_t count = 0;
 uint8_t countPrev = 0;
 
-inline void restoreCursor() { displayBuffer.setPixel(cx, cy, cursorColor); }
+inline void restoreCursor() { palettedBuffer.setColorIndex(cx, cy, cursorColorIndex); }
 
 inline void storeCursor() {
     cx = x;
     cy = y;
-    cursorColor = displayBuffer.getPixel(cx, cy);
-}
-
-inline void loadColor() {
-    fgColor = palette.get(c);
+    cursorColorIndex = palettedBuffer.getColorIndex(cx, cy);
 }
 
 ISR(PCINT2_vect) {
@@ -130,11 +126,16 @@ inline uint8_t enc(uint8_t x, uint8_t d, uint8_t result) {
 }
 
 void processInputs() {
+    CHSV* color;
     if (enc1d != 0) {
         if (btn4.isPressed()) {
-            fgColor.h -= enc1d * 4;
+            color = palette.getRef(fgColorIndex);
+            color->h -= enc1d * 4;
+            redrawRequired = true;
         } else if (btn5.isPressed()) {
-            bgColor.h -= enc1d * 4;
+            color = palette.getRef(bgColorIndex);
+            color->h -= enc1d * 4;
+            redrawRequired = true;
         } else {
             cy = y;
             y = (y - enc1d) & 0x0f;
@@ -144,9 +145,13 @@ void processInputs() {
     }
     if (enc2d != 0) {
         if (btn4.isPressed()) {
-            fgColor.s = sum(fgColor.s, enc2d * 10);
+            color = palette.getRef(fgColorIndex);
+            color->s = sum(color->s, enc2d * 10);
+            redrawRequired = true;
         } else if (btn5.isPressed()) {
-            bgColor.s = sum(bgColor.s, enc2d * 10);
+            color = palette.getRef(bgColorIndex);
+            color->s = sum(color->s, enc2d * 10);
+            redrawRequired = true;
         } else {
             cx = x;
             x = (x + enc2d) & 0x0f;
@@ -156,12 +161,15 @@ void processInputs() {
     }
     if (enc3d != 0) {
         if (btn4.isPressed()) {
-            fgColor.v = sum(fgColor.v, enc3d * 10);
+            color = palette.getRef(fgColorIndex);
+            color->v = sum(color->v, enc3d * 10);
+            redrawRequired = true;
         } else if (btn5.isPressed()) {
-            bgColor.v = sum(bgColor.v, enc3d * 10);
+            color = palette.getRef(bgColorIndex);
+            color->v = sum(color->v, enc3d * 10);
+            redrawRequired = true;
         } else {
-            c = (c + enc3d) % NUM_PALETTE;
-            loadColor();
+            fgColorIndex = (fgColorIndex + enc3d) % (PALETTE_SIZE - 1);
         }
         enc3d = 0;
     }
@@ -190,37 +198,36 @@ void checkInputs() {
 void draw() {
     switch (drawMode) {
         case MODE_HOVER:
-            cursorBlinking = CURSOR_BLINKING >> 1;
+            cursorBlinkTicks = CURSOR_BLINK_TICKS_MAX >> 1;
             displayChanged = true;
             if (cursorChanged) {
                 restoreCursor();
                 storeCursor();
                 cursorChanged = false;
             }
-            displayBuffer.setPixel(x, y, palette.get(c));
+            palettedBuffer.setColorIndex(x, y, fgColorIndex);
             return;
         case MODE_DRAW:
-            cursorBlinking = CURSOR_BLINKING;
+            cursorBlinkTicks = CURSOR_BLINK_TICKS_MAX;
             displayChanged = true;
             if (cursorChanged) {
-                cursorColor = fgColor;
+                cursorColorIndex = fgColorIndex;
                 restoreCursor();
                 storeCursor();
                 cursorChanged = false;
             }
-            palette.set(c, fgColor);
-            displayBuffer.setPixel(x, y, palette.get(c));
+            palettedBuffer.setColorIndex(x, y, fgColorIndex);
             return;
         case MODE_ERASE:
-            cursorBlinking = 1;
+            cursorBlinkTicks = 1;
             displayChanged = true;
             if (cursorChanged) {
-                cursorColor = bgColor;
+                cursorColorIndex = bgColorIndex;
                 restoreCursor();
                 storeCursor();
                 cursorChanged = false;
             }
-            displayBuffer.setPixel(x, y, bgColor);
+            palettedBuffer.setColorIndex(x, y, bgColorIndex);
             return;
     }
 }
@@ -244,7 +251,6 @@ void setup() {
               (1 << PCINT11);  // BTN2-5
     sei();
 
-    loadColor();
     storeCursor();
 }
 
@@ -257,16 +263,20 @@ void loop() {
 
     // Cursor blinking
     countPrev = count;
-    count = (count + 1) & CURSOR_BLINKING;
-    if (count >= cursorBlinking && countPrev < cursorBlinking) {
-        displayBuffer.setPixel(x, y, bgColor);
+    count = (count + 1) & CURSOR_BLINK_TICKS_MAX;
+    if (count >= cursorBlinkTicks && countPrev < cursorBlinkTicks) {
+        palettedBuffer.setColorIndex(x, y, bgColorIndex);
         displayChanged = true;
-    } else if (count < cursorBlinking && countPrev >= cursorBlinking) {
-        displayBuffer.setPixel(x, y, palette.get(c));
+    } else if (count < cursorBlinkTicks && countPrev >= cursorBlinkTicks) {
+        palettedBuffer.setColorIndex(x, y, fgColorIndex);
         displayChanged = true;
     }
 
     if (displayChanged) {
+        //if (redrawRequired) {
+            palettedBuffer.render();
+            redrawRequired = false;
+        //}
         displayBuffer.show();
         displayChanged = false;
     }
