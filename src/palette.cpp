@@ -6,7 +6,7 @@ Palette::Palette() {
         colors[i].s = 160;
         colors[i].v = 128;
     }
-    colors[PALETTE_BG_COLOR_INDEX] = CHSV(0, 0, 32);
+    colors[PALETTE_BG_COLOR_INDEX] = CHSV(0, 0, 16);
 }
 
 CHSV Palette::get(uint8_t index) {

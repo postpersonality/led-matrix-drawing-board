@@ -47,8 +47,7 @@ inline uint8_t sum(uint8_t x, int8_t d) {
 }
 
 void drawPixel(uint8_t x, uint8_t y, uint8_t colorIndex) {
-    switch (symMode)
-    {
+    switch (symMode) {
         default:
         case SymMode::none:
             palettedBuffer.setColorIndex(x, y, colorIndex);
@@ -132,7 +131,7 @@ void processInputs() {
             cursorChanged = true;
             break;
         case InputActionType::changeColor:
-            fgColorIndex = (fgColorIndex + action.value) % (PALETTE_SIZE - 1);
+            fgColorIndex = (fgColorIndex + PALETTE_BG_COLOR_INDEX + action.value) % (PALETTE_BG_COLOR_INDEX);
             break;
         case InputActionType::changeFgHue:
             color = palette.getRef(fgColorIndex);
@@ -215,6 +214,7 @@ void processInputs() {
 }
 
 void setup() {
+    // Serial.begin(9600);
     displayBuffer.init();
     inputs.init();
     storeCursor();
