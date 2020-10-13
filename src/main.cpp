@@ -28,11 +28,49 @@ bool cursorChanged = true;
 #define CURSOR_BLINK_TICKS_MAX 15
 uint8_t cursorBlinkTicks = CURSOR_BLINK_TICKS_MAX;
 DrawMode drawMode = DrawMode::draw;
+SymMode symMode = SymMode::none;
 
 uint8_t count = 0;
 uint8_t countPrev = 0;
 
-inline void restoreCursor() { palettedBuffer.setColorIndex(cx, cy, cursorColorIndex); }
+inline uint8_t dec(uint8_t x, uint8_t d) { return x > d ? x - d : 0; }
+inline uint8_t inc(uint8_t x, uint8_t d) {
+    uint8_t z = x + d;
+    return z < x || z < d ? 255 : z;
+}
+inline uint8_t sum(uint8_t x, int8_t d) {
+    if (d > 0) {
+        return inc(x, d);
+    } else {
+        return dec(x, -d);
+    }
+}
+
+void drawPixel(uint8_t x, uint8_t y, uint8_t colorIndex) {
+    switch (symMode)
+    {
+        default:
+        case SymMode::none:
+            palettedBuffer.setColorIndex(x, y, colorIndex);
+            break;
+        case SymMode::ver:
+            palettedBuffer.setColorIndex(x, y, colorIndex);
+            palettedBuffer.setColorIndex(15 - x, y, colorIndex);
+            break;
+        case SymMode::hor:
+            palettedBuffer.setColorIndex(x, y, colorIndex);
+            palettedBuffer.setColorIndex(x, 15 - y, colorIndex);
+            break;
+        case SymMode::verHor:
+            palettedBuffer.setColorIndex(x, y, colorIndex);
+            palettedBuffer.setColorIndex(15 - x, y, colorIndex);
+            palettedBuffer.setColorIndex(x, 15 - y, colorIndex);
+            palettedBuffer.setColorIndex(15 - x, 15 - y, colorIndex);
+            break;
+    }
+}
+
+inline void restoreCursor() { drawPixel(cx, cy, cursorColorIndex); }
 
 inline void storeCursor() {
     cx = x;
@@ -50,7 +88,7 @@ void draw() {
                 storeCursor();
                 cursorChanged = false;
             }
-            palettedBuffer.setColorIndex(x, y, fgColorIndex);
+            drawPixel(x, y, fgColorIndex);
             return;
         case DrawMode::draw:
             cursorBlinkTicks = CURSOR_BLINK_TICKS_MAX;
@@ -61,7 +99,7 @@ void draw() {
                 storeCursor();
                 cursorChanged = false;
             }
-            palettedBuffer.setColorIndex(x, y, fgColorIndex);
+            drawPixel(x, y, fgColorIndex);
             return;
         case DrawMode::erase:
             cursorBlinkTicks = 1;
@@ -72,30 +110,8 @@ void draw() {
                 storeCursor();
                 cursorChanged = false;
             }
-            palettedBuffer.setColorIndex(x, y, bgColorIndex);
+            drawPixel(x, y, bgColorIndex);
             return;
-    }
-}
-
-inline uint8_t encunl(uint8_t x, uint8_t d, uint8_t result) {
-    if (result == DIR_NONE) {
-        return x;
-    } else if (result == DIR_CW) {
-        return x - d;
-    } else {
-        return x + d;
-    }
-}
-inline uint8_t dec(uint8_t x, uint8_t d) { return x > d ? x - d : 0; }
-inline uint8_t inc(uint8_t x, uint8_t d) {
-    uint8_t z = x + d;
-    return z < x || z < d ? 255 : z;
-}
-inline uint8_t sum(uint8_t x, int8_t d) {
-    if (d > 0) {
-        return inc(x, d);
-    } else {
-        return dec(x, -d);
     }
 }
 
@@ -148,8 +164,40 @@ void processInputs() {
             color->v = sum(color->v, action.value * 10);
             redrawRequired = true;
             break;
-        case InputActionType::setMode:
+        case InputActionType::setDrawMode:
             drawMode = (DrawMode)action.value;
+            break;
+        case InputActionType::toggleSymModeVer:
+            switch (symMode) {
+                case SymMode::none:
+                    symMode = SymMode::ver;
+                    break;
+                case SymMode::ver:
+                    symMode = SymMode::none;
+                    break;
+                case SymMode::hor:
+                    symMode = SymMode::verHor;
+                    break;
+                case SymMode::verHor:
+                    symMode = SymMode::hor;
+                    break;
+            }
+            break;
+        case InputActionType::toggleSymModeHor:
+            switch (symMode) {
+                case SymMode::none:
+                    symMode = SymMode::hor;
+                    break;
+                case SymMode::hor:
+                    symMode = SymMode::none;
+                    break;
+                case SymMode::ver:
+                    symMode = SymMode::verHor;
+                    break;
+                case SymMode::verHor:
+                    symMode = SymMode::ver;
+                    break;
+            }
             break;
         case InputActionType::save:
             Eeprom::save(&palettedBuffer, NUM_LEDS, &palette, PALETTE_SIZE);
@@ -179,10 +227,10 @@ void loop() {
     countPrev = count;
     count = (count + 1) & CURSOR_BLINK_TICKS_MAX;
     if (count >= cursorBlinkTicks && countPrev < cursorBlinkTicks) {
-        palettedBuffer.setColorIndex(x, y, bgColorIndex);
+        drawPixel(x, y, bgColorIndex);
         displayChanged = true;
     } else if (count < cursorBlinkTicks && countPrev >= cursorBlinkTicks) {
-        palettedBuffer.setColorIndex(x, y, fgColorIndex);
+        drawPixel(x, y, fgColorIndex);
         displayChanged = true;
     }
 

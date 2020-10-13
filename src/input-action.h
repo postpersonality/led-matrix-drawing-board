@@ -15,7 +15,9 @@ enum struct InputActionType {
     changeColor,
     save,
     load,
-    setMode
+    setDrawMode,
+    toggleSymModeVer,
+    toggleSymModeHor
 };
 
 struct InputAction {

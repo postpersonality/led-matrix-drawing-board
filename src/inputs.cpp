@@ -64,23 +64,30 @@ InputAction Inputs::processInputs() {
             return InputAction(InputActionType::changeColor, enc3d);
         }
     }
-    if (btn5.isPressed()) {
-        if (btn4.isPressed()) {
-            if (btn1.isPressed()) {
+    if (btn4.isPressed()) {
+        if (btn5.isPressed()) {
+            if (btn1.wasPressed()) {
                 return InputAction(InputActionType::save);
-            } else if (btn2.isPressed()) {
+            } else if (btn2.wasPressed()) {
                 return InputAction(InputActionType::load);
+            }
+        } else {
+            if (btn1.wasPressed()) {
+                return InputAction(InputActionType::toggleSymModeVer);
+            }
+            if (btn2.wasPressed()) {
+                return InputAction(InputActionType::toggleSymModeHor);
             }
         }
     } else {
-        if (btn1.isPressed()) {
-            return InputAction(InputActionType::setMode, (int8_t)DrawMode::draw);
+        if (btn1.wasPressed()) {
+            return InputAction(InputActionType::setDrawMode, (int8_t)DrawMode::draw);
         }
-        if (btn2.isPressed()) {
-            return InputAction(InputActionType::setMode, (int8_t)DrawMode::erase);
+        if (btn2.wasPressed()) {
+            return InputAction(InputActionType::setDrawMode, (int8_t)DrawMode::erase);
         }
-        if (btn3.isPressed()) {
-            return InputAction(InputActionType::setMode, (int8_t)DrawMode::hover);
+        if (btn3.wasPressed()) {
+            return InputAction(InputActionType::setDrawMode, (int8_t)DrawMode::hover);
         }
     }
     return InputAction();

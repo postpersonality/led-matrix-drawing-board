@@ -5,3 +5,10 @@ enum struct DrawMode {
     erase,
     hover
 };
+
+enum struct SymMode {
+    none,
+    ver,
+    hor,
+    verHor
+};
