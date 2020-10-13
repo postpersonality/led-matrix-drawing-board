@@ -3,6 +3,7 @@
 #include <JC_Button.h>
 #include <Rotary.h>
 #include "display-buffer.h"
+#include "eeprom.h"
 #include "encoder.h"
 #include "hardware.h"
 #include "palette.h"
@@ -173,14 +174,27 @@ void processInputs() {
         }
         enc3d = 0;
     }
-    if (btn1.isPressed()) {
-        drawMode = MODE_DRAW;
-    }
-    if (btn2.isPressed()) {
-        drawMode = MODE_ERASE;
-    }
-    if (btn3.isPressed()) {
-        drawMode = MODE_HOVER;
+    // Load-Save
+    if (btn5.isPressed()) {
+        if (btn1.isPressed()) {
+            Eeprom::save(&palettedBuffer, NUM_LEDS, &palette, PALETTE_SIZE);
+        } else if (btn2.isPressed()) {
+            Eeprom::load(&palettedBuffer, NUM_LEDS, &palette, PALETTE_SIZE);
+            displayChanged = true;
+            redrawRequired = true;
+            storeCursor();
+        }
+        // Mode switch
+    } else {
+        if (btn1.isPressed()) {
+            drawMode = MODE_DRAW;
+        }
+        if (btn2.isPressed()) {
+            drawMode = MODE_ERASE;
+        }
+        if (btn3.isPressed()) {
+            drawMode = MODE_HOVER;
+        }
     }
 }
 

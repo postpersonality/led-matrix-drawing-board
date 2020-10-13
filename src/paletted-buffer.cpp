@@ -49,9 +49,13 @@ void PalettedBuffer::setByOffset(uint8_t offset, uint8_t colorIndex) {
     }
 }
 
+CompactPixel* PalettedBuffer::getCompactPixelRef(uint8_t bufferIndex) {
+    return &buffer[bufferIndex];
+}
+
 inline uint8_t PalettedBuffer::xyToBufferIndex(uint8_t x, uint8_t y) {
     return (y << 3) + (x >> 1);
 }
 inline uint8_t PalettedBuffer::xyToOffset(uint8_t x, uint8_t y) {
-    return (y << 4) + (x & 0x0f);
+    return (y << 4) | (x & 0x0f);
 }

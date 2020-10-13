@@ -24,6 +24,7 @@ class PalettedBuffer {
     void setColorIndex(uint8_t x, uint8_t y, uint8_t pixel);
     uint8_t getByOffset(uint8_t offset);
     void setByOffset(uint8_t offset, uint8_t colorIndex);
+    CompactPixel* getCompactPixelRef(uint8_t bufferIndex);
 
    private:
     CompactPixel buffer[BUFFER_SIZE];
