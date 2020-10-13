@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-enum InputActionType {
+enum struct InputActionType {
     none,
     changeFgHue,
     changeBgHue,
@@ -15,14 +15,11 @@ enum InputActionType {
     changeColor,
     save,
     load,
-    setMode,
-    setModeDraw,
-    setModeErase,
-    setModeHover
+    setMode
 };
 
 struct InputAction {
-    InputActionType type{none};
+    InputActionType type{InputActionType::none};
     int8_t value{0};
 
     inline InputAction() __attribute__((always_inline)) {

@@ -1,6 +1,7 @@
 #include <FastLED.h>
 
 #include "display-buffer.h"
+#include "draw-mode.h"
 #include "eeprom.h"
 #include "inputs.h"
 #include "palette.h"
@@ -26,10 +27,7 @@ bool redrawRequired = true;
 bool cursorChanged = true;
 #define CURSOR_BLINK_TICKS_MAX 15
 uint8_t cursorBlinkTicks = CURSOR_BLINK_TICKS_MAX;
-#define MODE_HOVER 0
-#define MODE_DRAW 1
-#define MODE_ERASE 2
-uint8_t drawMode = MODE_DRAW;
+DrawMode drawMode = DrawMode::draw;
 
 uint8_t count = 0;
 uint8_t countPrev = 0;
@@ -44,7 +42,7 @@ inline void storeCursor() {
 
 void draw() {
     switch (drawMode) {
-        case MODE_HOVER:
+        case DrawMode::hover:
             cursorBlinkTicks = CURSOR_BLINK_TICKS_MAX >> 1;
             displayChanged = true;
             if (cursorChanged) {
@@ -54,7 +52,7 @@ void draw() {
             }
             palettedBuffer.setColorIndex(x, y, fgColorIndex);
             return;
-        case MODE_DRAW:
+        case DrawMode::draw:
             cursorBlinkTicks = CURSOR_BLINK_TICKS_MAX;
             displayChanged = true;
             if (cursorChanged) {
@@ -65,7 +63,7 @@ void draw() {
             }
             palettedBuffer.setColorIndex(x, y, fgColorIndex);
             return;
-        case MODE_ERASE:
+        case DrawMode::erase:
             cursorBlinkTicks = 1;
             displayChanged = true;
             if (cursorChanged) {
@@ -105,64 +103,58 @@ void processInputs() {
     InputAction action = inputs.checkInputs();
     CHSV* color;
     switch (action.type) {
-        case none:
+        case InputActionType::none:
             return;
-        case changeX:
+        case InputActionType::changeX:
             cx = x;
             x = (x + action.value) & 0x0f;
             cursorChanged = true;
             break;
-        case changeY:
+        case InputActionType::changeY:
             cy = y;
             y = (y - action.value) & 0x0f;
             cursorChanged = true;
             break;
-        case changeColor:
+        case InputActionType::changeColor:
             fgColorIndex = (fgColorIndex + action.value) % (PALETTE_SIZE - 1);
             break;
-        case changeFgHue:
+        case InputActionType::changeFgHue:
             color = palette.getRef(fgColorIndex);
             color->h -= action.value * 4;
             redrawRequired = true;
             break;
-        case changeBgHue:
+        case InputActionType::changeBgHue:
             color = palette.getRef(bgColorIndex);
             color->h -= action.value * 4;
             redrawRequired = true;
             break;
-        case changeFgSat:
+        case InputActionType::changeFgSat:
             color = palette.getRef(fgColorIndex);
             color->s = sum(color->s, action.value * 10);
             redrawRequired = true;
             break;
-        case changeBgSat:
+        case InputActionType::changeBgSat:
             color = palette.getRef(bgColorIndex);
             color->s = sum(color->s, action.value * 10);
             redrawRequired = true;
             break;
-        case changeFgVal:
+        case InputActionType::changeFgVal:
             color = palette.getRef(fgColorIndex);
             color->v = sum(color->v, action.value * 10);
             redrawRequired = true;
             break;
-        case changeBgVal:
+        case InputActionType::changeBgVal:
             color = palette.getRef(bgColorIndex);
             color->v = sum(color->v, action.value * 10);
             redrawRequired = true;
             break;
-        case setModeDraw:
-            drawMode = MODE_DRAW;
+        case InputActionType::setMode:
+            drawMode = (DrawMode)action.value;
             break;
-        case setModeErase:
-            drawMode = MODE_ERASE;
-            break;
-        case setModeHover:
-            drawMode = MODE_HOVER;
-            break;
-        case save:
+        case InputActionType::save:
             Eeprom::save(&palettedBuffer, NUM_LEDS, &palette, PALETTE_SIZE);
             break;
-        case load:
+        case InputActionType::load:
             Eeprom::load(&palettedBuffer, NUM_LEDS, &palette, PALETTE_SIZE);
             displayChanged = true;
             redrawRequired = true;

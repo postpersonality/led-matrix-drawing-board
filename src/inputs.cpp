@@ -1,4 +1,5 @@
 #include "inputs.h"
+#include "draw-mode.h"
 
 void Inputs::pcint2Handler() {
     uint8_t result =
@@ -38,48 +39,48 @@ void Inputs::pcint1Handler() {
 InputAction Inputs::processInputs() {
     if (enc1d != 0) {
         if (btn4.isPressed()) {
-            return InputAction(changeFgHue, enc1d);
+            return InputAction(InputActionType::changeFgHue, enc1d);
         } else if (btn5.isPressed()) {
-            return InputAction(changeBgHue, enc1d);
+            return InputAction(InputActionType::changeBgHue, enc1d);
         } else {
-            return InputAction(changeY, enc1d);
+            return InputAction(InputActionType::changeY, enc1d);
         }
     }
     if (enc2d != 0) {
         if (btn4.isPressed()) {
-            return InputAction(changeFgSat, enc2d);
+            return InputAction(InputActionType::changeFgSat, enc2d);
         } else if (btn5.isPressed()) {
-            return InputAction(changeBgSat, enc2d);
+            return InputAction(InputActionType::changeBgSat, enc2d);
         } else {
-            return InputAction(changeX, enc2d);
+            return InputAction(InputActionType::changeX, enc2d);
         }
     }
     if (enc3d != 0) {
         if (btn4.isPressed()) {
-            return InputAction(changeFgVal, enc3d);
+            return InputAction(InputActionType::changeFgVal, enc3d);
         } else if (btn5.isPressed()) {
-            return InputAction(changeBgVal, enc3d);
+            return InputAction(InputActionType::changeBgVal, enc3d);
         } else {
-            return InputAction(changeColor, enc3d);
+            return InputAction(InputActionType::changeColor, enc3d);
         }
     }
-    // Load-Save
     if (btn5.isPressed()) {
-        if (btn1.isPressed()) {
-            return InputAction(save);
-        } else if (btn2.isPressed()) {
-            return InputAction(load);
+        if (btn4.isPressed()) {
+            if (btn1.isPressed()) {
+                return InputAction(InputActionType::save);
+            } else if (btn2.isPressed()) {
+                return InputAction(InputActionType::load);
+            }
         }
-        // Mode switch
     } else {
         if (btn1.isPressed()) {
-            return InputAction(setModeDraw);
+            return InputAction(InputActionType::setMode, (int8_t)DrawMode::draw);
         }
         if (btn2.isPressed()) {
-            return InputAction(setModeErase);
+            return InputAction(InputActionType::setMode, (int8_t)DrawMode::erase);
         }
         if (btn3.isPressed()) {
-            return InputAction(setModeHover);
+            return InputAction(InputActionType::setMode, (int8_t)DrawMode::hover);
         }
     }
     return InputAction();
@@ -100,7 +101,7 @@ InputAction Inputs::checkInputs() {
     btn4.read(ms);
     btn5.read(ms);
     InputAction action = processInputs();
-    if (action.type != none) {
+    if (action.type != InputActionType::none) {
         enc1d = 0;
         enc2d = 0;
         enc3d = 0;
