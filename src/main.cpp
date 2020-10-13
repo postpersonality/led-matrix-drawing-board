@@ -17,9 +17,9 @@ PalettedBuffer palettedBuffer(&displayBuffer, &palette);
 Rotary enc1(PIN_ENC1_1, PIN_ENC1_2);
 Rotary enc2(PIN_ENC2_1, PIN_ENC2_2);
 Rotary enc3(PIN_ENC3_1, PIN_ENC3_2);
-Button btn_enc1(PIN_ENC1_B, DEBOUNCE_MS, false, false);
-Button btn_enc2(PIN_ENC2_B, DEBOUNCE_MS, false, false);
-Button btn_enc3(PIN_ENC3_B, DEBOUNCE_MS, false, false);
+// Button btn_enc1(PIN_ENC1_B, DEBOUNCE_MS, false, false);
+// Button btn_enc2(PIN_ENC2_B, DEBOUNCE_MS, false, false);
+// Button btn_enc3(PIN_ENC3_B, DEBOUNCE_MS, false, false);
 Button btn1(PIN_BTN1, DEBOUNCE_MS, false, false);
 Button btn2(PIN_BTN2, DEBOUNCE_MS, false, false);
 Button btn3(PIN_BTN3, DEBOUNCE_MS, false, false);
@@ -184,17 +184,6 @@ void processInputs() {
     }
 }
 
-uint32_t ms = 0;
-void checkInputs() {
-    ms = millis();
-    btn1.read(ms);
-    btn2.read(ms);
-    btn3.read(ms);
-    btn4.read(ms);
-    btn5.read(ms);
-    processInputs();
-}
-
 void draw() {
     switch (drawMode) {
         case MODE_HOVER:
@@ -233,9 +222,9 @@ void draw() {
 }
 
 void setup() {
-    btn_enc1.begin();
-    btn_enc2.begin();
-    btn_enc3.begin();
+    // btn_enc1.begin();
+    // btn_enc2.begin();
+    // btn_enc3.begin();
     btn1.begin();
     btn2.begin();
     btn3.begin();
@@ -252,6 +241,17 @@ void setup() {
     sei();
 
     storeCursor();
+}
+
+uint32_t ms = 0;
+void checkInputs() {
+    ms = millis();
+    btn1.read(ms);
+    btn2.read(ms);
+    btn3.read(ms);
+    btn4.read(ms);
+    btn5.read(ms);
+    processInputs();
 }
 
 void loop() {
@@ -273,10 +273,10 @@ void loop() {
     }
 
     if (displayChanged) {
-        //if (redrawRequired) {
+        if (redrawRequired) {
             palettedBuffer.render();
             redrawRequired = false;
-        //}
+        }
         displayBuffer.show();
         displayChanged = false;
     }

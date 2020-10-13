@@ -9,25 +9,19 @@ PalettedBuffer::PalettedBuffer(DisplayBuffer* displayBuffer, Palette* palette) {
 void PalettedBuffer::render() {
     uint16_t ledIndex = 0;
     uint8_t colorIndex = 0;
-    for (uint8_t i = 0; i < BUFFER_SIZE; i++) {
-        if (i & 8) {
-            colorIndex = buffer[i].colorIndex0;
+    for (uint16_t i = 0; i < NUM_LEDS; i++) {
+        if (i & 0x10) {
+            colorIndex = getByOffset(i);
             this->displayBuffer->leds[ledIndex] = this->palette->colors[colorIndex];
             ledIndex--;
-            colorIndex = buffer[i].colorIndex1;
-            this->displayBuffer->leds[ledIndex] = this->palette->colors[colorIndex];
-            ledIndex--;
-            if ((i & 7) == 7) {
+            if ((i & 0x0f) == 0x0f) {
                 ledIndex += 17;
             }
         } else {
-            colorIndex = buffer[i].colorIndex0;
+            colorIndex = getByOffset(i);
             this->displayBuffer->leds[ledIndex] = this->palette->colors[colorIndex];
             ledIndex++;
-            colorIndex = buffer[i].colorIndex1;
-            this->displayBuffer->leds[ledIndex] = this->palette->colors[colorIndex];
-            ledIndex++;
-            if ((i & 7) == 7) {
+            if ((i & 0x0f) == 0x0f) {
                 ledIndex += 15;
             }
         }
@@ -35,21 +29,29 @@ void PalettedBuffer::render() {
 }
 
 uint8_t PalettedBuffer::getColorIndex(uint8_t x, uint8_t y) {
-    CompactPixel cpixel = buffer[XY(x, y)];
-    return x & 1 ? cpixel.colorIndex1 : cpixel.colorIndex0;
+    return getByOffset(xyToOffset(x, y));
 }
 
 void PalettedBuffer::setColorIndex(uint8_t x, uint8_t y, uint8_t colorIndex) {
     this->displayBuffer->setPixel(x, y, this->palette->colors[colorIndex]);
-    uint8_t bufferOffset = XY(x, y);
-    if (x & 1) {
-        buffer[bufferOffset].colorIndex1 = colorIndex;
+    setByOffset(xyToOffset(x, y), colorIndex);
+}
+
+uint8_t PalettedBuffer::getByOffset(uint8_t offset) {
+    return offset & 1 ? buffer[offset >> 1].colorIndex1 : buffer[offset >> 1].colorIndex0;
+}
+
+void PalettedBuffer::setByOffset(uint8_t offset, uint8_t colorIndex) {
+    if (offset & 1) {
+        buffer[offset >> 1].colorIndex1 = colorIndex;
     } else {
-        buffer[bufferOffset].colorIndex0 = colorIndex;
+        buffer[offset >> 1].colorIndex0 = colorIndex;
     }
 }
 
-// Optimized for 16x16
-inline uint8_t PalettedBuffer::XY(uint8_t x, uint8_t y) {
+inline uint8_t PalettedBuffer::xyToBufferIndex(uint8_t x, uint8_t y) {
     return (y << 3) + (x >> 1);
+}
+inline uint8_t PalettedBuffer::xyToOffset(uint8_t x, uint8_t y) {
+    return (y << 4) + (x & 0x0f);
 }

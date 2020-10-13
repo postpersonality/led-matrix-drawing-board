@@ -22,10 +22,13 @@ class PalettedBuffer {
     void render();
     uint8_t getColorIndex(uint8_t x, uint8_t y);
     void setColorIndex(uint8_t x, uint8_t y, uint8_t pixel);
+    uint8_t getByOffset(uint8_t offset);
+    void setByOffset(uint8_t offset, uint8_t colorIndex);
 
    private:
     CompactPixel buffer[BUFFER_SIZE];
     DisplayBuffer* displayBuffer;
     Palette* palette;
-    inline uint8_t XY(uint8_t x, uint8_t y);
+    inline uint8_t xyToBufferIndex(uint8_t x, uint8_t y);
+    inline uint8_t xyToOffset(uint8_t x, uint8_t y);
 };
